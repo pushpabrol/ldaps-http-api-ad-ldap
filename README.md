@@ -44,3 +44,5 @@ Test the other endpoints too:
 /api/verify_email
 ```
 
+
+#### Note - This is only a development version of the service. In production this should only run over HTTPS and should have a caching layer to keep a LDAP Connection open for re use
