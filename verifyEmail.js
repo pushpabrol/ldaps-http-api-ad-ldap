@@ -6,12 +6,10 @@ router.route('/')
     .post(function (req, res) {
 
         res.statusCode = 200;
-        res.json({verified: true});
+        res.json({ verified: true });
 
-
-        
-});
+    });
 
 
 
-    module.exports = router;
+module.exports = router;

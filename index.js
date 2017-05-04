@@ -31,33 +31,31 @@ router.route('/').get(function (req, res) {
 });
 
 
-
-
 //Login
 var login = require('./login');
 router.use('/login', login);
 
 //Create
 var create = require('./create');
-router.use('/create',create);
+router.use('/create', create);
 
 
 //Verify
 var verifyEmail = require('./verifyEmail');
- router.use('/verify_email',verifyEmail);
+router.use('/verify_email', verifyEmail);
 
 //Get User
 var getUser = require('./getUser');
-router.use('/getuser',getUser);
+router.use('/getuser', getUser);
 
 
 //Change Password
 var changePassword = require('./changePassword');
-router.use('/changepassword',changePassword);
+router.use('/changepassword', changePassword);
 
 //Delete
 var deleteme = require('./delete');
-router.use('/delete',deleteme);
+router.use('/delete', deleteme);
 
 
 // all of our routes will be prefixed with /api
