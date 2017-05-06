@@ -6,7 +6,6 @@ var common = require('./common');
 router.route('/')
     .post(function (req, res) {
 
-        console.log(req.body);
         var id = req.body.id;
         common.deleteWithLdap(id, function (error, profile) {
             if (error) {

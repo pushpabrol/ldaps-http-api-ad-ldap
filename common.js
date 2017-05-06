@@ -1,32 +1,8 @@
 var ldapjs = require('ldapjs');
 var configuration = require('./configuration');
-
-
-
-function getLdapClientAsync(cb) {
-    var client = ldapjs.createClient({
-        url: configuration.LDAP_URL,
-        connectTimeout: 500,
-        timeout: 1500
-    });
-    client.bind(
-        configuration.LDAP_USER,
-        configuration.LDAP_PASSWORD,
-        function onBind(err) {
-            if (err) return cb(err);
-            cb(null, client);
-        });
-}
-
-function getLdapClient() {
-    return ldapjs.createClient({
-        url: configuration.LDAP_URL,
-        bindDN: configuration.LDAP_USER,
-        bindCredentials: configuration.LDAP_PASSWORD,
-        connectTimeout: 500,
-        timeout: 1500
-    });
-}
+var ldap_clients = require('./ldap.js');
+var client = ldap_clients.client;
+var binder = ldap_clients.binder;
 
 function getProfileByMail(mail, client, cb) {
     const opts = {
@@ -168,14 +144,12 @@ function getDNsById(id, client, cb) {
 
 
 function searchWithLdap(email, cb) {
-    getLdapClientAsync(function onClientReady(err, client) {
-        if (err || !client) {
+        if (!client) {
             console.log(err);
             return cb(new Error('User repository not available'));
         }
 
         function done(err, profile) {
-            client.destroy();
             cb(err, profile);
         }
 
@@ -184,14 +158,11 @@ function searchWithLdap(email, cb) {
             if (!profile) return done(null, null);
             return done(null, mapLdapProfile(profile.object));
         });
-    });
+    
 }
 
 function deleteWithLdap(id, cb) {
-    const client = getLdapClient();
-
     function done(err) {
-        client.destroy();
         cb(err);
     }
 
@@ -220,10 +191,8 @@ function deleteWithLdap(id, cb) {
 
 
 function createWithLdap(user, cb) {
-    const client = getLdapClient();
 
     function done(err) {
-        client.destroy();
         cb(err);
     }
 
@@ -266,10 +235,9 @@ function getPasswordResetChange(password) {
 }
 
 function changePasswordWithLdap(mail, newPassword, cb) {
-    const client = getLdapClient();
+    const client = ldap_client.client;
 
     function done(err, changed) {
-        client.destroy();
         cb(err, changed);
     }
 
@@ -295,30 +263,27 @@ function changePasswordWithLdap(mail, newPassword, cb) {
 
 
 function validateWithLdap(email, password, cb) {
-    getLdapClientAsync(function onClientReady(err, client) {
-
-        if (err || !client) {
+        if (!binder) {
             console.log(err);
             return cb(new Error('User repository not available'));
         }
 
         function done(err, profile) {
-            client.destroy();
             cb(err, profile);
         }
 
-        getProfileByMail(email, client, function onProfile(err, profile) {
+        getProfileByMail(email, binder, function onProfile(err, profile) {
             if (err) return done(err);
 
             if (!profile) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
 
-            client.bind(profile.dn, password, function onLogin(err) {
+            binder.bind(profile.dn, password, function onLogin(err) {
                 if (err) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
 
                 return done(null, mapLdapProfile(profile.object));
             });
         });
-    });
+    
 }
 
 

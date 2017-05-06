@@ -3,8 +3,6 @@ var router = express.Router();
 var common = require('./common');
 router.route('/')
     .post(function (req, res) {
-
-        console.log(req.body);
         var user = req.body;
         common.createWithLdap(user, function (error, profile) {
             if (error) {
