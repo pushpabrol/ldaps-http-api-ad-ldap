@@ -13,6 +13,7 @@ LDAP_USER: 'cn=admin,dc=...,dc=...,dc=com', -- The bind ID to communicate with L
 LDAP_PASSWORD: '...', -- The bind password for the admin account above
 LDAP_USERS_OU: 'ou=users,dc=...,dc=...,dc=com', -- The users OU
 PORT: 8080
+LDAP_HEARTBEAT_SECONDS: 300 // In seconds - Set this to a value lower than the ldap idle timeout
 
 ```
 ## How to use
