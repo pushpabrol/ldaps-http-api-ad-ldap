@@ -6,12 +6,7 @@ var client, binder;
 var cb = require('cb');
 function createConnection() {
 var tlsOptions = null;
-if (configuration.LDAP_URL.toLowerCase().substr(0, 5) === 'ldaps') {   
-tlsOptions = {
 
-ca: [ fs.readFileSync('cert1.pem') ]
-};
-}
     var connection = ldap.createClient({
         url: configuration.LDAP_URL
 
