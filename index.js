@@ -16,7 +16,11 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 var authorization = require('./authorization');
+
+// This is to check that this API is called with Authorization
 app.use(authorization.jwtCheck);
+
+//This is to check the right scope
 app.use(authorization.checkAuthorization);
 var port = configuration.PORT || 80;        // set our port
 

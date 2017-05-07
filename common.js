@@ -45,11 +45,11 @@ function getProfileByMail(mail, client, cb) {
 function mapLdapProfile(profile) {
     // TODOL define a single ID
     return {
-        user_id: profile.cn,
+        user_id: profile.uid,
         name: profile.displayName,
         family_name: profile.sn,
         given_name: profile.givenName,
-        nickname: profile.cn || profile.commonName,
+        nickname: profile.uid || profile.cn,
         email: profile.mail,
         email_verified: true
     };
@@ -96,7 +96,7 @@ function getDnByMail(mail, client, cb) {
 function mapAuth0Profile(profile) {
     return {
         cn: profile.username || profile.email,
-        sn: 'User',
+        sn: profile.family_name,
         givenName: profile.given_name || profile.name || (profile.email && profile.email.split('@')[0]),
         uid: profile.username || profile.email,
         mail: profile.email,
