@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var common = require('./common');
 
+
 router.route('/')
     .post(function (req, res) {
         common.validateWithLdap(req.body.email, req.body.password, function (error, profile) {

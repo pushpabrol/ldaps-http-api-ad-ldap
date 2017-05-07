@@ -5,7 +5,8 @@ LDAP_USER: 'cn=admin,dc=...,dc=...,dc=com',
 LDAP_PASSWORD: '...',
 LDAP_USERS_OU: 'ou=users,dc=...,dc=...,dc=com',
 PORT: 8080,
-LDAP_HEARTBEAT_SECONDS : 240 // Set this to a value lower than the ldap idle timeout
-
+LDAP_HEARTBEAT_SECONDS : 240, // Set this to a value lower than the ldap idle timeout
+AUTH0_DOMAIN: 'xxx.auth0.com',
+API_AUDIENCE: 'https://ldap.api.com/api'
 }
 

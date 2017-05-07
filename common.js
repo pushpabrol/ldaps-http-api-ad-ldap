@@ -144,21 +144,21 @@ function getDNsById(id, client, cb) {
 
 
 function searchWithLdap(email, cb) {
-        if (!client) {
-            console.log(err);
-            return cb(new Error('User repository not available'));
-        }
+    if (!client) {
+        console.log(err);
+        return cb(new Error('User repository not available'));
+    }
 
-        function done(err, profile) {
-            cb(err, profile);
-        }
+    function done(err, profile) {
+        cb(err, profile);
+    }
 
-        getProfileByMail(email, client, function onProfile(err, profile) {
-            if (err) return done(err);
-            if (!profile) return done(null, null);
-            return done(null, mapLdapProfile(profile.object));
-        });
-    
+    getProfileByMail(email, client, function onProfile(err, profile) {
+        if (err) return done(err);
+        if (!profile) return done(null, null);
+        return done(null, mapLdapProfile(profile.object));
+    });
+
 }
 
 function deleteWithLdap(id, cb) {
@@ -263,27 +263,27 @@ function changePasswordWithLdap(mail, newPassword, cb) {
 
 
 function validateWithLdap(email, password, cb) {
-        if (!binder) {
-            console.log(err);
-            return cb(new Error('User repository not available'));
-        }
+    if (!binder) {
+        console.log(err);
+        return cb(new Error('User repository not available'));
+    }
 
-        function done(err, profile) {
-            cb(err, profile);
-        }
+    function done(err, profile) {
+        cb(err, profile);
+    }
 
-        getProfileByMail(email, binder, function onProfile(err, profile) {
-            if (err) return done(err);
+    getProfileByMail(email, binder, function onProfile(err, profile) {
+        if (err) return done(err);
 
-            if (!profile) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
+        if (!profile) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
 
-            binder.bind(profile.dn, password, function onLogin(err) {
-                if (err) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
+        binder.bind(profile.dn, password, function onLogin(err) {
+            if (err) return done(new WrongUsernameOrPasswordError(email, "Invalid Credentials"));
 
-                return done(null, mapLdapProfile(profile.object));
-            });
+            return done(null, mapLdapProfile(profile.object));
         });
-    
+    });
+
 }
 
 

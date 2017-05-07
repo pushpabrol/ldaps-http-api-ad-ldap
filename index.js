@@ -6,7 +6,6 @@
 //define variables
 
 var configuration = require('./configuration');
-
 // call the packages we need
 
 var express = require('express');        // call express
@@ -16,7 +15,9 @@ var bodyParser = require('body-parser');
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
+var authorization = require('./authorization');
+app.use(authorization.jwtCheck);
+app.use(authorization.checkAuthorization);
 var port = configuration.PORT || 80;        // set our port
 
 // =============================================================================
