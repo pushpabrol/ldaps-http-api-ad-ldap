@@ -25,7 +25,7 @@ API_AUDIENCE: 'https://ldap.api.com/api' - The identifier of this API as defined
 - Run the application with `node index.js`
 
 ```
-Test the API to create a user as shown below:
+Test the API to login a user as shown below:
 
 1. Cretate a new API in Auth0 under https://manage.auth0.com/#/apis
 2. Note the `Identifier` in the Auth0 API settings. This identifier is the API_AUDIENCE setting within the configuration
