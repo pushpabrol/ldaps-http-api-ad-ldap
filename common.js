@@ -96,7 +96,7 @@ function getDnByMail(mail, client, cb) {
 function mapAuth0Profile(profile) {
     return {
         cn: profile.username || profile.email,
-        sn: profile.family_name,
+        sn: profile.family_name || profile.username,
         givenName: profile.given_name || profile.name || (profile.email && profile.email.split('@')[0]),
         uid: profile.username || profile.email,
         mail: profile.email,
@@ -202,8 +202,9 @@ function createWithLdap(user, cb) {
         if (profile) return done(new ValidationError("user_exists", "Email address " + user.email + " already registered"));
 
         const ldapEntry = mapAuth0Profile(user);
+        console.log(ldapEntry);
         client.add(
-            "cn=" + ldapEntry.cn + "," + configuration.LDAP_USERS_OU,
+            "uid=" + ldapEntry.uid + "," + configuration.LDAP_USERS_OU,
             ldapEntry,
             function (err) {
                 if (err) {
