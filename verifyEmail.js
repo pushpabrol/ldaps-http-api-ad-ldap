@@ -2,11 +2,10 @@ var express = require('express');
 var router = express.Router();
 var ldap = require('ldapjs');
 var configuration = require('./configuration');
+// TO DO based on requirement
 router.route('/')
     .post(function (req, res) {
-
-        res.statusCode = 200;
-        res.json({ verified: true });
+        res.status(200).json({ verified: true });
 
     });
 

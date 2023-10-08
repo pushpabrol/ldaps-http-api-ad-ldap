@@ -1,24 +1,18 @@
-var express = require('express');
-var router = express.Router();
-var common = require('./common');
+const express = require('express');
+const router = express.Router();
+const common = require('./common');
+const util = require('util');
+
 router.route('/')
-    .post(function (req, res) {
-        var user = req.body;
-        common.createWithLdap(user, function (error, profile) {
-            if (error) {
+  .post(async function (req, res, next) {
+    const user = req.body;
 
-                res.statusCode = 500;
-                res.json(error);
-            }
-            else {
-
-                res.statusCode = 200;
-                res.json(profile);
-            }
-
-        });
-
-    });
+    try {
+      const profile = await common.createWithLdap(user);
+      res.status(201).json(profile || { "status" : "Created successfully!"});
+    } catch (error) {
+      next(error);
+    }
+  });
 
 module.exports = router;
-

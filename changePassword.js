@@ -4,21 +4,14 @@ var common = require('./common');
 
 
 router.route('/')
-    .post(function (req, res) {
-        common.changePasswordWithLdap(req.body.email, req.body.password, function (error, profile) {
-            if (error) {
-                console.log(error);
-                res.statusCode = 500;
-                res.json(error);
-            }
-            else {
-
-                res.statusCode = 200;
-                res.json(profile);
-            }
-
+    .post(async function (req, res, next) {
+        try {
+            const result = await common.changePasswordWithLdap(req.body.email, req.body.password)
+            res.status(200).json({ "status" : result});
+          } catch (error) {
+            next(error);
+          }
         });
-    });
 
 module.exports = router;
 

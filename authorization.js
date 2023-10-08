@@ -1,4 +1,4 @@
-var jwt = require('express-jwt');
+var { expressjwt: jwt } = require('express-jwt');
 var jwks = require('jwks-rsa');
 var configuration = require('./configuration');
 

@@ -1,11 +1,9 @@
-# ldap-api-http
+# ad-ldap-api-http
 
 
-- A project showing how to use a HTTP API template for hosting a custom database connection to LDAP. This API is called via the auth0 custom database login script to login the user
+- A project showing how to use a HTTP API template for hosting a custom database connection to AD using LDAP. This API is called via the auth0 custom database login script to login, create , update , change password of the user
 
 
- 
- 
 - The required settings in the configuration.js ( please rename configuration.sample.js to configuration.js)
 ```
 LDAP_URL :'ldap://xxxxx:389', -- The LDAP Url
@@ -13,7 +11,7 @@ LDAP_USER: 'cn=admin,dc=...,dc=...,dc=com', -- The bind ID to communicate with L
 LDAP_PASSWORD: '...', -- The bind password for the admin account above
 LDAP_USERS_OU: 'ou=users,dc=...,dc=...,dc=com', -- The users OU
 PORT: 8080
-LDAP_HEARTBEAT_SECONDS: 300 // In seconds - Set this to a value lower than the ldap idle timeout
+LDAP_IDLE_TIMEOUT_MS: 300 // In seconds - Set this to a value lower than the ldap idle timeout
 AUTH0_DOMAIN: 'xxx.auth0.com', -- auth0 domain
 API_AUDIENCE: 'https://ldap.api.com/api' - The identifier of this API as defined within Auth0
 
@@ -66,8 +64,9 @@ Test the other endpoints too:
 /api/delete
 /api/getuser
 /api/changepassword
-/api/verify_email
+/api/set-email-verified
 ```
 
 
 #### Note - This is only a development version of the service. In production this should only run over HTTPS
+#### Note - TO create, modify in AD the ldap has to be over ssl , i.e simple ldaps is required

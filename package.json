@@ -10,14 +10,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "async": "^2.4.0",
-    "body-parser": "^1.17.1",
-    "cb": "^0.1.0",
-    "express": "^4.15.2",
-    "express-jwt": "^5.3.0",
+    "async": "^3.2.4",
+    "body-parser": "^1.20.2",
+    "cb": "^0.1.1",
+    "express": "^4.18.2",
+    "express-jwt": "^8.4.1",
     "filesystem": "^1.0.1",
-    "fs": "0.0.1-security",
-    "jwks-rsa": "^1.1.1",
-    "ldapjs": "^1.0.1"
+    "fs": "^0.0.1-security",
+    "jwks-rsa": "^3.1.0",
+    "ldapjs": "^3.0.5"
   }
 }

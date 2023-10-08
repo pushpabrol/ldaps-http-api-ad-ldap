@@ -4,20 +4,15 @@ var common = require('./common');
 
 
 router.route('/')
-    .post(function (req, res) {
-        common.validateWithLdap(req.body.email, req.body.password, function (error, profile) {
-            if (error) {
-                console.log(error);
-                res.statusCode = 500;
-                res.json(error);
-            }
-            else {
-
-                res.statusCode = 200;
-                res.json(profile);
-            }
-
-        });
+    .post(async function (req, res, next) {
+        try {
+        const profile = await common.validateWithLdap(req.body.email, req.body.password);
+        res.status(200).json(profile);
+        }
+        catch(error){
+        next(error);
+                
+        }
     });
 
 module.exports = router;
