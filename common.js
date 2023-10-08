@@ -164,14 +164,15 @@ async function getDnByMail(mail, client) {
 function mapAuth0Profile(profile) {
   return {
     cn: profile.username || profile.email,
-    sn: profile.family_name || profile.username,
-    givenName: profile.given_name || profile.name || (profile.email && profile.email.split('@')[0]),
+    sn: profile.family_name || (profile.email && profile.email.split('@')[0]),
+    givenName: profile.given_name || (profile.email && profile.email.split('@')[0]),
     uid: profile.username || profile.email,
     mail: profile.email,
     userPassword: profile.password,
-    objectClass: ['top', 'person', 'inetOrgPerson']
+    objectClass: ['top', 'person', 'organizationalPerson','user']
   };
 }
+
 
 async function getDNsByIdCNorUID(cnOrId, client) {
   // TODO: define single ID field
