@@ -4,7 +4,7 @@
 - A project showing how to use a HTTP API template for hosting a custom database connection to AD using LDAP. This API is called via the auth0 custom database login script to login, create , update , change password of the user
 
 
-- The required settings in the configuration.js ( please rename configuration.sample.js to configuration.js)
+- The required settings in the .env file ( please rename .env.sample to .env)
 ```
 LDAP_URL :'ldap://xxxxx:389', -- The LDAP Url
 LDAP_USER: 'cn=admin,dc=...,dc=...,dc=com', -- The bind ID to communicate with LDAP
