@@ -36,8 +36,8 @@ app.get("/", function (req, res) {
     res.json({ message: 'Welcome to LDAP API!' });
 });
 
-//router.use(authorization.jwtCheck);
-//router.use(authorization.checkAuthorization);
+router.use(authorization.jwtCheck);
+router.use(authorization.checkAuthorization);
 
 //Login
 var login = require('./login');
