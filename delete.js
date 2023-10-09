@@ -4,7 +4,7 @@ var common = require('./common');
 router.route('/')
     .post(async function (req, res, next) {
         try {
-        var cnOrId = req.body.cn;
+        var cnOrId = req.body.cn || req.body.id;
         const deleted = await common.deleteWithLdap(cnOrId);
         console.log(deleted);
         res.status(200).json({"success" : true});

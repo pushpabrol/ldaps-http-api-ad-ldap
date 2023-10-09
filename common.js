@@ -9,10 +9,11 @@ function promisifySearch(client, opts) {
   return new Promise((resolve, reject) => {
     const entries = [];
     client.search(configuration.LDAP_USERS_OU, opts, (err, res) => {
-      if (err) return reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err ));
+      if (err) return reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
 
       res.on('searchEntry', (entry) => {
         const profile = {};
+        console.log(entry.pojo.attributes);
         entry.pojo.attributes.forEach((item) => {
           profile[item.type] = item.values[0];
         });
@@ -24,7 +25,7 @@ function promisifySearch(client, opts) {
         if (err.message === 'Size Limit Exceeded') {
           resolve(entries);
         } else {
-          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err ));
+          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
         }
       });
 
@@ -41,76 +42,76 @@ function promisifyCreate(client, ldapEntry) {
       "CN=" + ldapEntry.cn + "," + configuration.LDAP_USERS_OU,
       ldapEntry,
       function (err) {
-          if (err) {
-              console.log(err);
-              console.log(err.message);
-              console.log(err.code);
-              reject(new WrappedLDAPError(err.lde_message || "Error while searching", 400, err ));
-          } else {
+        if (err) {
+          console.log(err);
+          console.log(err.message);
+          console.log(err.code);
+          reject(new WrappedLDAPError(err.lde_message || "Error while searching", 400, err));
+        } else {
           delete ldapEntry.unicodePwd;
           delete ldapEntry.userPassword;
           delete ldapEntry.objectClass;
           delete ldapEntry.userAccountControl;
           resolve(ldapEntry)
-          }
-          
+        }
+
       });
   });
 }
 
-function promisifyChange(client,dn, modification) {
+function promisifyChange(client, dn, modification) {
 
   return new Promise((resolve, reject) => {
 
-  client.modify(
-    dn,
-    modification,
-    function (err) {
+    client.modify(
+      dn,
+      modification,
+      function (err) {
         if (err) {
 
-            console.log(err);
-            reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err ));
+          console.log(err);
+          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
         } else resolve(true);
-    });
+      });
   });
 
 }
 
-function promisifyDelete(client,dn) {
+function promisifyDelete(client, dn) {
 
   return new Promise((resolve, reject) => {
     client.del(
       dn,
       function (err) {
-          if (err) {
-              console.log(err);
-              reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err ));
-          } else resolve();
+        if (err) {
+          console.log(err);
+          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+        } else resolve();
       });
   });
 
 }
 
 
-function promisifyBind(binder, dn,password) {
+function promisifyBind(binder, dn, password) {
 
   return new Promise((resolve, reject) => {
-  return binder.bind(dn, password, function onLogin(err) {
-    if (err) {
+    return binder.bind(dn, password, function onLogin(err) {
+      if (err) {
         console.log(err);
-        reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err ));
-    } else resolve(true);
+        reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+      } else resolve(true);
+    });
   });
-});
 }
 
 
 async function getProfileByMailCNorUID(input, client) {
   const opts = {
     scope: 'sub',
-    filter: '(|(mail=' + input + ')(cn=' + input + ')(uid=' + input + '))',
+    filter: '(|(mail=' + input + ')(cn=' + input + ')(uid=' + input + ')(samAccountName=' + input + '))',
     timeLimit: 100,
-    attributes: ['objectGUID', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'commonName', 'mail']
+    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'commonName', 'mail']
   };
 
   try {
@@ -122,6 +123,7 @@ async function getProfileByMailCNorUID(input, client) {
     if (entries.length === 0) return null;
 
     console.log(entries[0]);
+
     return entries[0];
   } catch (err) {
     console.error(err);
@@ -131,8 +133,10 @@ async function getProfileByMailCNorUID(input, client) {
 
 function mapLdapProfile(profile) {
   // TODOL define a single ID
+  var userId = profile.uid;
+  if (profile['objectGUID;binary']) userId = objectGUIDToUUID(profile['objectGUID;binary']);
   return {
-    user_id: profile.uid,
+    user_id: userId,
     name: profile.displayName,
     family_name: profile.sn,
     given_name: profile.givenName,
@@ -142,17 +146,16 @@ function mapLdapProfile(profile) {
   };
 }
 
-async function getDnByMail(mail, client) {
+async function getDnByMailorUsername(mailOrUserName, client) {
   const opts = {
     scope: 'sub',
-    filter: '(|(mail=' + mail + ')(cn=' + mail + '))',
+    filter: '(|(mail=' + mailOrUserName + ')(cn=' + mailOrUserName + ')(sAMAccountName=' + mailOrUserName + '))',
     attributes: ['dn'],
     timeLimit: 1
   };
 
   try {
     const entries = await promisifySearch(client, opts);
-
     if (entries.length === 0) return null;
     return entries[0];
   } catch (err) {
@@ -169,19 +172,25 @@ function mapAuth0Profile(profile) {
     uid: profile.username || profile.email,
     mail: profile.email,
     userPassword: profile.password,
-    objectClass: ['top', 'person', 'organizationalPerson','user']
+    objectClass: ['top', 'person', 'organizationalPerson', 'user']
   };
 }
 
 
-async function getDNsByIdCNorUID(cnOrId, client) {
-  // TODO: define single ID field
-  const opts = {
+async function getDNsByAuth0UserId(Id, client) {
+  var opts = {
     scope: 'sub',
-    filter: '(cn=' + cnOrId + ')',
+    filter: '(|(mail=' + Id + ')(cn=' + Id + ')(sAMAccountName=' + Id + '))',
     attributes: ['dn'],
     timeLimit: 1
   };
+  if (isGuidFormat(Id)) {
+    opts.filter = new ldapjs.EqualityFilter({
+      attribute: 'objectGUID',
+      value: guid_to_byte_array(Id)
+    });
+  }
+
 
   try {
     const entries = await promisifySearch(client, opts);
@@ -211,7 +220,7 @@ async function searchWithLdap(email) {
 
 async function deleteWithLdap(id) {
   try {
-    const entries = await getDNsByIdCNorUID(id, client);
+    const entries = await getDNsByAuth0UserId(id, client);
     if (!entries || entries.length === 0) {
       throw new Error("User with Id " + id + " is not registered");
       return;
@@ -220,8 +229,8 @@ async function deleteWithLdap(id) {
       throw new Error("There are multiple users with that id");
       return
     } else {
-    const deleted = await promisifyDelete(client, entries[0].dn)
-    return deleted;
+      const deleted = await promisifyDelete(client, entries[0].dn)
+      return deleted;
     }
   } catch (err) {
     console.log(err);
@@ -231,7 +240,7 @@ async function deleteWithLdap(id) {
 
 async function createWithLdap(user) {
   try {
-    const profile = await getDnByMail(user.email, client);
+    const profile = await getDnByMailorUsername(user.email, client);
     if (profile) {
       throw new WrappedLDAPError("Email address " + user.email + " already registered", 409, null);
     }
@@ -266,12 +275,12 @@ function getPasswordResetChange(password) {
 
 async function changePasswordWithLdap(mail, newPassword) {
   try {
-    const profile = await getDnByMail(mail, client);
+    const profile = await getDnByMailorUsername(mail, client);
 
     if (!profile) {
       throw new WrappedLDAPError("Email address " + mail + " is not registered", 404, null);
     }
-    return await promisifyChange(client,profile.dn,getPasswordResetChange(newPassword) )
+    return await promisifyChange(client, profile.dn, getPasswordResetChange(newPassword))
     //await client.modify(profile.dn, getPasswordResetChange(newPassword));
 
   } catch (err) {
@@ -291,25 +300,25 @@ async function validateWithLdap(email, password) {
     if (!profile) {
       throw new WrongUsernameOrPasswordError("Invalid Credentials");
     }
-    const result = await promisifyBind(binder,profile.dn, password); 
-    if(result)return mapLdapProfile(profile);
+    const result = await promisifyBind(binder, profile.dn, password);
+    if (result) return mapLdapProfile(profile);
     else return null;
   } catch (err) {
     console.error(err);
     if (err instanceof WrongUsernameOrPasswordError) {
       throw err;
     } else {
-      throw new WrappedLDAPError(err.message,400, err);
+      throw new WrappedLDAPError(err.message, 400, err);
     }
   }
 }
 
 
 class WrongUsernameOrPasswordError extends Error {
-  constructor (message,originalError = null) {
-      super(message);
-      this.statusCode = 401;
-      this.originalError = originalError;
+  constructor(message, originalError = null) {
+    super(message);
+    this.statusCode = 401;
+    this.originalError = originalError;
   }
 }
 
@@ -329,6 +338,40 @@ class WrappedLDAPError extends Error {
     // Capture the stack trace
     Error.captureStackTrace(this, this.constructor);
   }
+}
+
+function isGuidFormat(str) {
+  const guidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return guidRegex.test(str);
+}
+
+const objectGUIDToUUID = (objectGUID) => {
+  const hexValue = Buffer.from(objectGUID, 'base64').toString('hex')
+
+  return hexValue.replace(
+    /([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{4})([0-9a-f]{10})/,
+    '$4$3$2$1-$6$5-$8$7-$9-$10',
+  )
+}
+
+
+function guid_to_byte_array(uuid_string) {
+  let bytes = [];
+
+  uuid_string.split("-").map((number, index) => {
+
+    if (number) {
+      let match = number.match(/.{1,2}/g);
+      if (match) {
+        let bytesInChar = index < 3 ? match.reverse() : match;
+
+        bytesInChar.map((byte) => {
+          bytes.push(parseInt(byte, 16));
+        });
+      }
+    }
+  });
+  return bytes;
 }
 
 
