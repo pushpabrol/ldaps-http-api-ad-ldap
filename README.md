@@ -1,4 +1,4 @@
-# ad-ldap-api-http
+# ad-ldap-api-https
 
 
 - A project showing how to use a HTTP API template for hosting a custom database connection to AD using LDAP. This API is called via the auth0 custom database login script to login, create , update , change password of the user
@@ -56,16 +56,174 @@ curl --request POST \
 
 
 ```
-Test the other endpoints too:
 
+# API Usage
+
+- [Endpoints](#endpoints)
+  - [Create User](#create-user)
+  - [User Login](#user-login)
+  - [Delete User](#delete-user)
+  - [Get User Information](#get-user-information)
+  - [Change Password](#change-password)
+  - [Set Email Verified](#set-email-verified)
+
+## Endpoints
+
+### Create User
+
+- **Endpoint:** `/api/create`
+- **Method:** POST
+- **Description:** This endpoint allows you to create a new user account. Users can provide their registration information, including **username**, **password**,**given_name**, **family_name** and **email** in the request body. At a minimum **email** and **password** are required. 
+- This is the logic that is used to map the data provided to the LDAP record - https://github.com/pushpabrol/ldaps-http-api-ad-ldap/blob/main/common.js#L166
+
+**Request Example:**
+```json
+POST /api/create
+Authorization: Bearer <your_auth_token_here>
+{
+  "username": "example_user",
+  "password": "secure_password",
+  "email": "user@example.com",
+  "family_name" : "test",
+  "given_name":"user"
+ }
 ```
-/api/create
-/api/login
-/api/delete
-/api/getuser
-/api/changepassword
-/api/set-email-verified
+
+**Response Example:**
+```json
+{
+    "cn": "example_user",
+    "sn": "test",
+    "givenName": "user",
+    "uid": "example_user",
+    "mail": "testadd.user@aduser.com",
+    "sAMAccountName": "testadd.user"
+}
 ```
+
+### User Login
+
+- **Endpoint:** `/api/login`
+- **Method:** POST
+- **Description:** Users can use this endpoint to log in to their accounts by providing their credentials. Either **email** or **username** along with **password** is required
+**Request Example:**
+```json
+POST /api/login
+Authorization: Bearer <your_auth_token_here>
+{
+  "username": "example_user",
+  "password": "secure_password"
+}
+```
+
+**Response Example:**
+```json
+{
+    "user_id": "889db215-1da7-42a4-bd14-638a9067386e",
+    "family_name": "test",
+    "given_name": "user",
+    "nickname": "testadd.user@aduser.com",
+    "email": "testadd.user@aduser.com",
+    "email_verified": true
+}
+or 
+HTTP 401
+{
+    "error": "Invalid Credentials"
+}
+```
+
+### Delete User
+
+- **Endpoint:** `/api/delete`
+- **Method:** POST
+- **Description:** This endpoint allows to delete user accounts by **id**. Users need to provide their authentication token in the request headers for authentication. In this sample the AD objectGUID is returned as user_id and is the id to use for deletion 
+
+**Request Example:**
+```json
+POST /api/delete
+Authorization: Bearer <your_auth_token_here>
+{
+    "id": "889db215-1da7-42a4-bd14-638a9067386e"
+}
+```
+
+**Response Example:**
+```json
+{
+    "success": true
+}
+```
+
+### Get User
+
+- **Endpoint:** `/api/getuser`
+- **Method:** POST
+- **Description:** Users information using this endpoint. Authentication is required, and caller must include their authentication token in the request headers.Either **email** or **username** is required to be passed in the body
+
+**Request Example:**
+```json
+POST /api/getuser
+Authorization: Bearer your_auth_token_here
+{
+     "email" : "testadd.user@aduser.com"   
+}
+or
+{
+     "username" : "testadd.user"   
+}
+```
+
+**Response Example:**
+```json
+{
+    "user_id": "889db215-1da7-42a4-bd14-638a9067386e",
+    "family_name": "testadd.user",
+    "given_name": "testadd.user",
+    "nickname": "testadd.user@aduser.com",
+    "email": "testadd.user@aduser.com",
+    "email_verified": true
+}
+```
+
+### Change Password
+
+- **Endpoint:** `/api/changepassword`
+- **Method:** POST
+- **Description:** this endpoint is to change account password. Caller must provide new passwords in the request body along with email or username and include their authentication token in the request headers.Either **email** or **username** along with the new password  **new_password** is required
+
+**Request Example:**
+```json
+POST /api/changepassword
+Authorization: Bearer your_auth_token_here
+{
+   "email": "",
+  "new_password": "new_secure_password"
+}
+or
+{
+   "username": "",
+  "new_password": "new_secure_password"
+}
+```
+
+**Response Example:**
+```json
+{
+    "status": true
+}
+```
+
+### Set Email Verified
+
+- **Endpoint:** `/api/set-email-verified`
+- **Method:** POST
+- **Description:** TO DO
+
+
+
+
+
 
 
 #### Note - This is only a development version of the service. In production this should only run over HTTPS
