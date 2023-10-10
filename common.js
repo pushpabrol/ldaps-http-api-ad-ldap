@@ -170,7 +170,7 @@ function mapAuth0Profile(profile) {
     givenName: profile.given_name || (profile.email && profile.email.split('@')[0]),
     uid: profile.username || profile.email,
     mail: profile.email,
-    sAMAccountName : profile.username || profile.email,
+    sAMAccountName : profile.username || profile.email.split('@')[0],
     userPassword: profile.password,
     objectClass: ['top', 'person', 'organizationalPerson', 'user']
   };
