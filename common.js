@@ -110,7 +110,7 @@ async function getProfileByMailCNorUID(input, client) {
     scope: 'sub',
     filter: '(|(mail=' + input + ')(cn=' + input + ')(uid=' + input + ')(samAccountName=' + input + '))',
     timeLimit: 100,
-    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'commonName', 'mail','sAMAccountName' ]
+    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'mail','sAMAccountName' ]
   };
 
   try {
