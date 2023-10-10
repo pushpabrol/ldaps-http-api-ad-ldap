@@ -5,7 +5,11 @@ var common = require('./common');
 router.route('/')
     .post(async function (req, res, error) {
         try {
-        const profile = await common.searchWithLdap(req.body.email);
+        
+        // either email or username is required - mail, cn and uid will be checked
+        const input = req.body.email || req.body.username;
+
+        const profile = await common.searchWithLdap(input);
         res.status(200).json(profile);
         }
         catch(error) {

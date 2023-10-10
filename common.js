@@ -92,7 +92,6 @@ function promisifyDelete(client, dn) {
 
 }
 
-
 function promisifyBind(binder, dn, password) {
 
   return new Promise((resolve, reject) => {
@@ -111,7 +110,7 @@ async function getProfileByMailCNorUID(input, client) {
     scope: 'sub',
     filter: '(|(mail=' + input + ')(cn=' + input + ')(uid=' + input + ')(samAccountName=' + input + '))',
     timeLimit: 100,
-    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'commonName', 'mail']
+    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'commonName', 'mail','sAMAccountName' ]
   };
 
   try {
@@ -149,7 +148,7 @@ function mapLdapProfile(profile) {
 async function getDnByMailorUsername(mailOrUserName, client) {
   const opts = {
     scope: 'sub',
-    filter: '(|(mail=' + mailOrUserName + ')(cn=' + mailOrUserName + ')(sAMAccountName=' + mailOrUserName + '))',
+    filter: '(|(mail=' + mailOrUserName + ')(cn=' + mailOrUserName + ')(sAMAccountName=' + mailOrUserName + ')(uid=' + mailOrUserName + '))',
     attributes: ['dn'],
     timeLimit: 1
   };
@@ -171,6 +170,7 @@ function mapAuth0Profile(profile) {
     givenName: profile.given_name || (profile.email && profile.email.split('@')[0]),
     uid: profile.username || profile.email,
     mail: profile.email,
+    sAMAccountName : profile.username || profile.email,
     userPassword: profile.password,
     objectClass: ['top', 'person', 'organizationalPerson', 'user']
   };
@@ -180,7 +180,7 @@ function mapAuth0Profile(profile) {
 async function getDNsByAuth0UserId(Id, client) {
   var opts = {
     scope: 'sub',
-    filter: '(|(mail=' + Id + ')(cn=' + Id + ')(sAMAccountName=' + Id + '))',
+    filter: '(|(mail=' + Id + ')(cn=' + Id + ')(sAMAccountName=' + Id + ')(uid=' + Id + '))',
     attributes: ['dn'],
     timeLimit: 1
   };
