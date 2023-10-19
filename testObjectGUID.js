@@ -1,4 +1,4 @@
-const ldap = require('ldapjs');
+import { createClient, filters } from 'ldapjs';
 
 
 const objectID = "10fedcf8-50aa-4b82-917a-01c6bb0d87f3"; // Read the object ID from command line arguments
@@ -6,7 +6,7 @@ const objectID = "10fedcf8-50aa-4b82-917a-01c6bb0d87f3"; // Read the object ID f
 const bindDN = 'CN=pushpabrol,CN=Users,DC=msdirectoryservices,DC=desmaximus,DC=com'; // Specify your BIND_DN
 const searchBase = `CN=Users,DC=msdirectoryservices,DC=desmaximus,DC=com`; // Specify the search base
 
-const client = ldap.createClient({
+const client = createClient({
   url: 'ldaps://psedomain.msdirectoryservices.desmaximus.com:636', // Specify your LDAP server URL
 });
 
@@ -15,7 +15,7 @@ client.bind(bindDN, 'Whats4@me12345', (err) => {
     console.error('LDAP Bind Error:', err);
     return;
   }
-  var myFilter = new ldap.filters.EqualityFilter({
+  var myFilter = new filters.EqualityFilter({
     attribute: 'objectGUID',
     value: guid_to_byte_array(objectID)
 });

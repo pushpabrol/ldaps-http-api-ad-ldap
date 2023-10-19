@@ -1,18 +1,18 @@
-const express = require('express');
-const router = express.Router();
-const common = require('./common');
-const util = require('util');
+import { Router } from 'express';
+const router = Router();
+import { createWithLdap } from './common.js';
+import util from 'util';
 
 router.route('/')
   .post(async function (req, res, next) {
     const user = req.body;
 
     try {
-      const profile = await common.createWithLdap(user);
+      const profile = await createWithLdap(user);
       res.status(201).json(profile || { "status" : "Created successfully!"});
     } catch (error) {
       next(error);
     }
   });
 
-module.exports = router;
+export default router;

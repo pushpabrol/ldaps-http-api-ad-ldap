@@ -1,7 +1,5 @@
-var express = require('express');
-var router = express.Router();
-var ldap = require('ldapjs');
-var configuration = require('./configuration');
+import { Router } from 'express';
+var router = Router();
 // TO DO based on requirement
 router.route('/')
     .post(function (req, res) {
@@ -11,4 +9,4 @@ router.route('/')
 
 
 
-module.exports = router;
+export default router;

@@ -1,16 +1,46 @@
-const ldapjs = require('ldapjs');
-const configuration = require('./configuration');
-const ldap_clients = require('./ldap.js');
-const client = ldap_clients.client;
-const binder = ldap_clients.binder;
+import pkg from 'ldapjs';
+const { InvalidCredentialsError, EqualityFilter, NoSuchObjectError, InappropriateMatchingError, EntryAlreadyExistsError, Attribute, Change, UnavailableError } = pkg;
+import { LDAP_USERS_OU } from './configuration.js';
+import { client as _client, binder as _binder } from './ldap.js';
+const client = _client;
+const binder = _binder;
+import profileMapper from './profileMapper.js';
+import mapAuth0CreateUserProfileToLdap from './mapCreateUserToLdapProfile.js';
 
+import PQueue from 'p-queue';
+const bindQueue = new PQueue({ concurrency: 10 });
+
+bindQueue.onIdle(function(){
+  setTimeout(function(){
+    console.log("All binds done!");
+  }, 2000);
+  
+})
+
+bindQueue.onEmpty(function(){
+  setTimeout(function(){
+    console.log("Queue is empty!");
+  }, 2000);
+
+  
+})
 
 function promisifySearch(client, opts) {
   return new Promise((resolve, reject) => {
     const entries = [];
-    client.search(configuration.LDAP_USERS_OU, opts, (err, res) => {
-      if (err) return reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+    const startTime = Date.now();
 
+// Perform some operation
+
+    client.search(LDAP_USERS_OU, opts, (err, res) => {
+      const endTime = Date.now();
+      const elapsedTime = endTime - startTime;
+      console.log(`Search Operation took ${elapsedTime} ms.`);
+
+      if (err) {
+        return reject(new WrappedLDAPError(err));
+      }
+      
       res.on('searchEntry', (entry) => {
         const profile = {};
         console.log(entry.pojo.attributes);
@@ -25,7 +55,7 @@ function promisifySearch(client, opts) {
         if (err.message === 'Size Limit Exceeded') {
           resolve(entries);
         } else {
-          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+          reject(new WrappedLDAPError(err));
         }
       });
 
@@ -38,15 +68,20 @@ function promisifySearch(client, opts) {
 
 function promisifyCreate(client, ldapEntry) {
   return new Promise((resolve, reject) => {
+    const startTime = Date.now();
     client.add(
-      "CN=" + ldapEntry.cn + "," + configuration.LDAP_USERS_OU,
+      "CN=" + ldapEntry.cn + "," + LDAP_USERS_OU,
       ldapEntry,
       function (err) {
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        console.log(`Create Operation took ${elapsedTime} ms.`);
+    
         if (err) {
           console.log(err);
           console.log(err.message);
           console.log(err.code);
-          reject(new WrappedLDAPError(err.lde_message || "Error while searching", 400, err));
+          reject(new WrappedLDAPError(err));
         } else {
           delete ldapEntry.unicodePwd;
           delete ldapEntry.userPassword;
@@ -62,15 +97,19 @@ function promisifyCreate(client, ldapEntry) {
 function promisifyChange(client, dn, modification) {
 
   return new Promise((resolve, reject) => {
+    const startTime = Date.now();
 
     client.modify(
       dn,
       modification,
       function (err) {
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        console.log(`Change Operation took ${elapsedTime} ms.`);        
         if (err) {
 
           console.log(err);
-          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+          reject(new WrappedLDAPError(err));
         } else resolve(true);
       });
   });
@@ -80,29 +119,45 @@ function promisifyChange(client, dn, modification) {
 function promisifyDelete(client, dn) {
 
   return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+
     client.del(
       dn,
       function (err) {
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        console.log(`Delete Operation took ${elapsedTime} ms.`);   
         if (err) {
           console.log(err);
-          reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
+          reject(new WrappedLDAPError(err));
         } else resolve();
       });
   });
 
 }
 
-function promisifyBind(binder, dn, password) {
-
-  return new Promise((resolve, reject) => {
-    return binder.bind(dn, password, function onLogin(err) {
-      if (err) {
-        console.log(err);
-        reject(new WrappedLDAPError(err.lde_message || "Error while searching", null, err));
-      } else resolve(true);
+async function promisifyBind(binder, dn, password) {
+  return bindQueue.add(async () => {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      binder.bind(dn, password, (err) => {
+        const elapsedTime = Date.now() - startTime;
+        console.log(`Bind Operation took ${elapsedTime} ms.`); 
+        if (err) {
+          console.log("Error in bind");
+          console.log(err instanceof InvalidCredentialsError);
+          const detailedError = new WrappedLDAPError(err);
+          console.log(detailedError);
+          reject(detailedError);
+        } else {
+          console.log("Items in queue: ", bindQueue.size);
+          resolve(true);
+        }
+      });
     });
   });
 }
+
 
 
 async function getProfileByMailCNorUID(input, client) {
@@ -110,19 +165,16 @@ async function getProfileByMailCNorUID(input, client) {
     scope: 'sub',
     filter: '(|(mail=' + input + ')(cn=' + input + ')(uid=' + input + ')(samAccountName=' + input + '))',
     timeLimit: 100,
-    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'mail','sAMAccountName' ]
+    attributes: ['objectGUID;binary', 'dn', 'cn', 'name', 'uid', 'displayName', 'sn', 'givenName', 'mail','sAMAccountName', 'st','description','postalCode','telephoneNumber','distinguishedName','co','department','company','mailNickname','sAMAccountType','userPrincipalName','manager','organizationUnits' ]
+     
   };
 
   try {
     console.log(opts);
-
     const entries = await promisifySearch(client, opts);
-
     console.log(entries.length);
     if (entries.length === 0) return null;
-
     console.log(entries[0]);
-
     return entries[0];
   } catch (err) {
     console.error(err);
@@ -130,20 +182,6 @@ async function getProfileByMailCNorUID(input, client) {
   }
 }
 
-function mapLdapProfile(profile) {
-  // TODOL define a single ID
-  var userId = profile.uid;
-  if (profile['objectGUID;binary']) userId = objectGUIDToUUID(profile['objectGUID;binary']);
-  return {
-    user_id: userId,
-    name: profile.displayName,
-    family_name: profile.sn,
-    given_name: profile.givenName,
-    nickname: profile.uid || profile.cn,
-    email: profile.mail,
-    email_verified: true
-  };
-}
 
 async function getDnByMailorUsername(mailOrUserName, client) {
   const opts = {
@@ -163,19 +201,6 @@ async function getDnByMailorUsername(mailOrUserName, client) {
   }
 }
 
-function mapAuth0Profile(profile) {
-  return {
-    cn: profile.username || profile.email,
-    sn: profile.family_name || (profile.email && profile.email.split('@')[0]),
-    givenName: profile.given_name || (profile.email && profile.email.split('@')[0]),
-    uid: profile.username || profile.email,
-    mail: profile.email,
-    sAMAccountName : profile.username || profile.email.split('@')[0],
-    userPassword: profile.password,
-    objectClass: ['top', 'person', 'organizationalPerson', 'user']
-  };
-}
-
 
 async function getDNsByAuth0UserId(Id, client) {
   var opts = {
@@ -185,7 +210,7 @@ async function getDNsByAuth0UserId(Id, client) {
     timeLimit: 1
   };
   if (isGuidFormat(Id)) {
-    opts.filter = new ldapjs.EqualityFilter({
+    opts.filter = new EqualityFilter({
       attribute: 'objectGUID',
       value: guid_to_byte_array(Id)
     });
@@ -201,7 +226,7 @@ async function getDNsByAuth0UserId(Id, client) {
   }
 }
 
-async function searchWithLdap(email) {
+export async function searchWithLdap(email) {
   if (!client) {
     console.log(err);
     throw new Error('User repository not available');
@@ -211,22 +236,22 @@ async function searchWithLdap(email) {
     const profile = await getProfileByMailCNorUID(email, client);
     if (!profile) return null;
 
-    return mapLdapProfile(profile);
+    return profileMapper(profile);
   } catch (err) {
     console.log(err);
     throw err;
   }
 }
 
-async function deleteWithLdap(id) {
+export async function deleteWithLdap(id) {
   try {
     const entries = await getDNsByAuth0UserId(id, client);
     if (!entries || entries.length === 0) {
-      throw new Error("User with Id " + id + " is not registered");
+      throw new WrappedLDAPError(new NoSuchObjectError("User with Id " + id + " is not registered"));
       return;
     }
     else if (entries.length > 1) {
-      throw new Error("There are multiple users with that id");
+      throw new WrappedLDAPError(new InappropriateMatchingError("There are multiple users with that id"));
       return
     } else {
       const deleted = await promisifyDelete(client, entries[0].dn)
@@ -238,13 +263,13 @@ async function deleteWithLdap(id) {
   }
 }
 
-async function createWithLdap(user) {
+export async function createWithLdap(user) {
   try {
     const profile = await getDnByMailorUsername(user.email, client);
     if (profile) {
-      throw new WrappedLDAPError("Email address " + user.email + " already registered", 409, null);
+      throw new WrappedLDAPError(new EntryAlreadyExistsError("Email address " + user.email + " already registered"));
     }
-    const ldapEntry = mapAuth0Profile(user);
+    const ldapEntry = mapAuth0CreateUserProfileToLdap(user);
     ldapEntry.userAccountControl = 512;
     ldapEntry.unicodePwd = convertPassword(ldapEntry.userPassword);
     ldapEntry.objectClass = ["top", "person", "organizationalPerson", "user"];
@@ -260,12 +285,12 @@ function convertPassword(password) {
 }
 
 function getPasswordResetChange(password) {
-  const attr = new ldapjs.Attribute({
+  const attr = new Attribute({
     type: 'unicodePwd',
     values: convertPassword(password)
   });
 
-  const change = new ldapjs.Change({
+  const change = new Change({
     operation: 'replace',
     modification: attr
   });
@@ -273,12 +298,12 @@ function getPasswordResetChange(password) {
   return change;
 }
 
-async function changePasswordWithLdap(mail, newPassword) {
+export async function changePasswordWithLdap(mail, newPassword) {
   try {
     const profile = await getDnByMailorUsername(mail, client);
 
     if (!profile) {
-      throw new WrappedLDAPError("Email address " + mail + " is not registered", 404, null);
+      throw new WrappedLDAPError( new NoSuchObjectError("Email address " + mail + " is not registered"));
     }
     return await promisifyChange(client, profile.dn, getPasswordResetChange(newPassword))
     //await client.modify(profile.dn, getPasswordResetChange(newPassword));
@@ -289,10 +314,10 @@ async function changePasswordWithLdap(mail, newPassword) {
   }
 }
 
-async function validateWithLdap(email, password) {
+export async function validateWithLdap(email, password) {
   if (!binder) {
     console.log('User repository not available');
-    throw new Error('User repository not available');
+    throw new WrappedLDAPError(new UnavailableError('User repository not available'));
   }
 
   try {
@@ -301,15 +326,11 @@ async function validateWithLdap(email, password) {
       throw new WrongUsernameOrPasswordError("Invalid Credentials");
     }
     const result = await promisifyBind(binder, profile.dn, password);
-    if (result) return mapLdapProfile(profile);
+    if (result) return profileMapper(profile);
     else return null;
   } catch (err) {
     console.error(err);
-    if (err instanceof WrongUsernameOrPasswordError) {
-      throw err;
-    } else {
-      throw new WrappedLDAPError(err.message, 400, err);
-    }
+    throw err;
   }
 }
 
@@ -323,35 +344,33 @@ class WrongUsernameOrPasswordError extends Error {
 }
 
 class WrappedLDAPError extends Error {
-  constructor(message, statusCode = 500, originalError = null) {
-    super(message); // Call the super constructor with the error message
+  constructor(error){
+    super(error);
+    this.name = error.name;
+    this.statusCode = this.statusByErrorName() || 500;
+    this.code = error.code || 1000;
+    this.message = this.messageByErrorName();
+    Error.captureStackTrace(this, error);
+  }
+  statusByErrorName = function() {
+    return {
+       "InvalidCredentialsError" : 401, 
+       "NoSuchObjectError" : 404, 
+       "EntryAlreadyExistsError" : 409 ,
+       "InappropriateMatchingError" : 409
+    }[this.name] || 400;
+  };
 
-    // Set the error name to the class name
-    this.name = this.constructor.name;
-
-    // Set the statusCode property
-    this.statusCode = statusCode;
-
-    // Set the originalError property
-    this.originalError = originalError;
-
-    // Capture the stack trace
-    Error.captureStackTrace(this, this.constructor);
+  messageByErrorName = function() {
+    return {
+      "UnwillingToPerformError" : "Invalid Password Strength", 
+   }[this.name] || this.message
   }
 }
 
 function isGuidFormat(str) {
   const guidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return guidRegex.test(str);
-}
-
-const objectGUIDToUUID = (objectGUID) => {
-  const hexValue = Buffer.from(objectGUID, 'base64').toString('hex')
-
-  return hexValue.replace(
-    /([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{4})([0-9a-f]{10})/,
-    '$4$3$2$1-$6$5-$8$7-$9-$10',
-  )
 }
 
 
@@ -375,10 +394,3 @@ function guid_to_byte_array(uuid_string) {
 }
 
 
-module.exports = {
-  validateWithLdap: validateWithLdap,
-  createWithLdap: createWithLdap,
-  changePasswordWithLdap: changePasswordWithLdap,
-  deleteWithLdap: deleteWithLdap,
-  searchWithLdap: searchWithLdap
-};

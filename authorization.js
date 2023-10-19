@@ -1,16 +1,16 @@
-var { expressjwt: jwt } = require('express-jwt');
-var jwks = require('jwks-rsa');
-var configuration = require('./configuration');
+import { expressjwt as jwt } from 'express-jwt';
+import { expressJwtSecret } from 'jwks-rsa';
+import { AUTH0_DOMAIN, API_AUDIENCE } from './configuration.js';
 
-var jwtCheck = jwt({
-    secret: jwks.expressJwtSecret({
+export const jwtCheck = jwt({
+    secret: expressJwtSecret({
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: "https://" + configuration.AUTH0_DOMAIN + "/.well-known/jwks.json"
+        jwksUri: "https://" + AUTH0_DOMAIN + "/.well-known/jwks.json"
     }),
-    audience: configuration.API_AUDIENCE,
-    issuer: "https://" + configuration.AUTH0_DOMAIN + "/",
+    audience: API_AUDIENCE,
+    issuer: "https://" + AUTH0_DOMAIN + "/",
     algorithms: ['RS256']
 });
 
@@ -18,7 +18,7 @@ var jwtCheck = jwt({
 
 // Check Authorization for API calls
 
-var checkAuthorization = function (req, res, next) {
+export const checkAuthorization = function (req, res, next) {
 
     var requiredPermission = [];
     console.log(req.path);
@@ -52,11 +52,5 @@ var checkAuthorization = function (req, res, next) {
 }
 
 
-module.exports = {
-
-jwtCheck : jwtCheck,
-checkAuthorization : checkAuthorization
-
-}
 
 

@@ -1,20 +1,21 @@
-var express = require('express');
-var router = express.Router();
-var common = require('./common');
+import { Router } from 'express';
+var router = Router();
+import { validateWithLdap } from './common.js';
 
 
 router.route('/')
     .post(async function (req, res, next) {
         try {
-        const profile = await common.validateWithLdap(req.body.email || req.body.email, req.body.password);
+        const profile = await validateWithLdap(req.body.email || req.body.username, req.body.password);
         res.status(200).json(profile);
         }
         catch(error){
+        console.log(error);
         next(error);
                 
         }
     });
 
-module.exports = router;
+export default router;
 
 

@@ -5,17 +5,17 @@
 
 //define variables
 
-var configuration = require('./configuration');
+import { PORT } from './configuration.js';
 // call the packages we need
 
-var express = require('express');        // call express
+import express, { Router } from 'express';        // call express
 var app = express();                 // define our app using express
-var bodyParser = require('body-parser');
-// configure app to use bodyParser()
+import pkg from 'body-parser';
+const { urlencoded, json } = pkg;// configure app to use bodyParser()
 // this will let us get the data from a POST
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-var authorization = require('./authorization');
+app.use(urlencoded({ extended: true }));
+app.use(json());
+import { jwtCheck, checkAuthorization } from './authorization.js';
 // app.use(function (err, req, res, next) {
 //     res.setHeader('Content-Type', 'application/json');
 //     res.status(500).json({ error: err });
@@ -27,41 +27,41 @@ var authorization = require('./authorization');
 
 //This is to check the right scope
 //app.use(authorization.checkAuthorization);
-var port = configuration.PORT || 80;        // set our port
+var port = PORT || 80;        // set our port
 
 // =============================================================================
-var router = express.Router();              // get an instance of the express Router
+var router = Router();              // get an instance of the express Router
 
 app.get("/", function (req, res) {
     res.json({ message: 'Welcome to LDAP API!' });
 });
 
-router.use(authorization.jwtCheck);
-router.use(authorization.checkAuthorization);
+router.use(jwtCheck);
+router.use(checkAuthorization);
 
 //Login
-var login = require('./login');
+import login from './login.js';
 router.use('/login', login);
 
 //Create
-var create = require('./create');
+import create from './create.js';
 router.use('/create', create);
 //Verify
-var verifyEmail = require('./verifyEmail');
+import verifyEmail from './verifyEmail.js';
 router.use('/set-email-verified', verifyEmail);
 
 //Get User
-var getUser = require('./getUser');
+import getUser from './getUser.js';
 router.use('/getuser', getUser);
 
 
 //Change Password
-var changePassword = require('./changePassword');
+import changePassword from './changePassword.js';
 router.use('/changepassword', changePassword);
 
 
 //Delete
-var deleteme = require('./delete');
+import deleteme from './delete.js';
 router.use('/delete', deleteme);
 
 
@@ -69,13 +69,13 @@ router.use('/delete', deleteme);
 app.use('/api',router);
 
 app.use(function (err, req, res, next) {
-
     console.error(err);
     // Set the status code based on the error or use a default (500)
     const statusCode = err.status || err.statusCode || 500;
     // Send a JSON response with the error message
-    res.status(statusCode).json({ error: err.message });
+    res.status(statusCode).json({ error: err.message, code: err.code, name: err.name });
   });
+
   
 
 
